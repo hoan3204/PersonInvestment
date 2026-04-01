@@ -3,6 +3,7 @@ using PersonalInvestmentSystem.Web.UnitOfWork;
 
 using PersonalInvestmentSystem.Web.Domain.Entities;
 using PersonalInvestmentSystem.Web.Domain.Enums;
+using Microsoft.AspNetCore.Identity;
 
 namespace PersonalInvestmentSystem.Web.Services.Implementations
 {
@@ -12,12 +13,16 @@ namespace PersonalInvestmentSystem.Web.Services.Implementations
         private readonly IWalletService _walletService;
         private readonly IProductService _productService;
         private readonly INotificationService _notificationService;
-        public TransactionService(IUnitOfWork unitOfWork, IWalletService walletService, IProductService productService, INotificationService notificationService)
+        private readonly IEmailService _emailService;
+        private readonly UserManager<AppUser> _userManager;
+        public TransactionService(IUnitOfWork unitOfWork, IWalletService walletService, IProductService productService, INotificationService notificationService, IEmailService emailService,UserManager<AppUser> userManager)
         {
             _unitOfWork = unitOfWork;
             _walletService = walletService;
             _productService = productService;
             _notificationService = notificationService;
+            _emailService = emailService;
+            _userManager = userManager;
         }
 
         public async Task<bool> BuyProductAsync(string userId, int productId, int quantity)
@@ -75,6 +80,12 @@ namespace PersonalInvestmentSystem.Web.Services.Implementations
                 };
             await _unitOfWork.Transactions.AddAsync(transaction);
             await _notificationService.SendBuySuccessNotificationAsync(userId, product.Name, totalAmount);
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                await _emailService.SendBuySuccessEmailAsync(user.Email, user.FullName,product.Name, totalAmount);
+            }
+
             await _unitOfWork.SaveChangesAsync();
 
             return true;
@@ -122,6 +133,11 @@ namespace PersonalInvestmentSystem.Web.Services.Implementations
 
             await _unitOfWork.Transactions.AddAsync(transaction);
             await _notificationService.SendSellSuccessNotificationAsync(userId, product.Name, totalAmount);
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                await _emailService.SendSellSuccessEmailAsync(user.Email, user.FullName, product.Name, totalAmount);
+            }
             await _unitOfWork.SaveChangesAsync();
 
             return true;

@@ -51,6 +51,8 @@ namespace PersonalInvestmentSystem.Web.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return BadRequest();
+            if (id <= 0) return BadRequest();
+
             var notification = await _unitOfWork.Notifications.GetByIdAsync(id);
 
             if (notification != null && notification.UserId == userId)

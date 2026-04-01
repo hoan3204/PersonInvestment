@@ -10,6 +10,7 @@ using PersonalInvestmentSystem.Web.Services.Implementations;
 using PersonalInvestmentSystem.Web.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using PersonalInvestmentSystem.Services.Implementations;
+using PersonalInvestmentSystem.Web.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +60,8 @@ builder.Services.AddScoped<IPortfolioService, PortfolioService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<IEmailService, EmailService>();
 var app = builder.Build();
 
 app.MapHub<NotificationHub>("/notificationHub");
