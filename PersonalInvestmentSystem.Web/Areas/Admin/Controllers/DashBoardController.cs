@@ -6,10 +6,10 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin")]
-    public class DashBoardController : Controller
+    public class DashboardController : Controller
     {
         private readonly IAdminService _adminService;
-        public DashBoardController(IAdminService adminService)
+        public DashboardController(IAdminService adminService)
         {
             _adminService = adminService;
         }
