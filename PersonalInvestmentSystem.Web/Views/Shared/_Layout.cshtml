@@ -94,94 +94,67 @@
         @if (User.Identity?.IsAuthenticated == true)
         {
             <text>
-                // ==================== HÀM LOAD THÔNG BÁO TỪ DATABASE ====================
                 async function loadNotifications() {
-                    console.log("🔄 Đang tải thông báo từ Database...");
                     try {
-                        const response = await fetch('/Notification/GetNotifications');
-                        if (!response.ok) throw new Error('Lỗi khi gọi API');
-
+                        const response = await fetch('/Notification/GetNotification');
                         const data = await response.json();
-                        console.log("📥 Dữ liệu thông báo:", data);
 
                         const list = document.getElementById("notificationList");
                         const countEl = document.getElementById("notificationCount");
 
-                        // Xóa thông báo cũ (giữ lại tiêu đề)
-                        while (list.children.length > 1) {
-                            list.removeChild(list.lastChild);
-                        }
+                        while (list.children.length > 1) list.removeChild(list.lastChild);
 
                         countEl.innerText = data.unreadCount || 0;
 
-                        if (data.notifications && data.notifications.length > 0) {
-                            data.notifications.forEach(noti => {
-                                const item = document.createElement("li");
-                                item.className = "dropdown-item border-bottom py-2";
-                                item.innerHTML = `
-                                    <strong>${noti.title}</strong><br>
-                                    <small class="text-muted">${noti.message}</small><br>
-                                    <small class="text-muted">${noti.createdDate}</small>
-                                `;
-                                list.appendChild(item);
+                        data.notifications.forEach(noti => {
+                            const item = document.createElement("li");
+                            item.className = `dropdown-item border-bottom py-2 ${noti.isRead ? 'text-muted' : 'fw-bold'}`;
+                            item.style.cursor = "pointer";
+                            item.innerHTML = `
+                                <strong>${noti.title}</strong><br>
+                                <small class="text-muted">${noti.message}</small><br>
+                                <small class="text-muted">${noti.createdDate}</small>
+                            `;
+
+                            // Khi click vào thông báo → đánh dấu đã đọc
+                            item.addEventListener('click', async () => {
+                                if (!noti.isRead) {
+                                    await fetch('/Notification/MarkAsRead', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ id: noti.id })   // cần thêm id vào data
+                                    });
+                                    loadNotifications(); // Reload lại danh sách
+                                }
                             });
-                        } else {
-                            const empty = document.createElement("li");
-                            empty.className = "dropdown-item text-center text-muted py-3";
-                            empty.textContent = "Không có thông báo nào";
-                            list.appendChild(empty);
-                        }
-                    } catch (error) {
-                        console.error("❌ Lỗi loadNotifications:", error);
+
+                            list.appendChild(item);
+                        });
+                    } catch (e) {
+                        console.error("Lỗi load thông báo:", e);
                     }
                 }
 
-                // ==================== SIGNALR REALTIME ====================
+                // SignalR realtime (giữ nguyên)
                 const connection = new signalR.HubConnectionBuilder()
                     .withUrl("/notificationHub")
                     .withAutomaticReconnect()
                     .build();
 
                 connection.on("ReceiveNotification", (title, message) => {
-                    console.log("🔔 Nhận thông báo realtime:", title, message);
-
                     let countEl = document.getElementById("notificationCount");
                     let count = parseInt(countEl.innerText) || 0;
                     countEl.innerText = count + 1;
 
-                    const list = document.getElementById("notificationList");
-                    const item = document.createElement("li");
-                    item.className = "dropdown-item border-bottom py-2";
-                    item.innerHTML = `
-                        <strong>${title}</strong><br>
-                        <small class="text-muted">${message}</small><br>
-                        <small class="text-muted">${new Date().toLocaleTimeString('vi-VN')}</small>
-                    `;
-                    list.appendChild(item);
-
-                    // Toast thông báo
-                    const toast = document.createElement('div');
-                    toast.className = 'toast show position-fixed bottom-0 end-0 m-3 bg-success text-white';
-                    toast.style.minWidth = '320px';
-                    toast.style.zIndex = '9999';
-                    toast.innerHTML = `
-                        <div class="toast-header bg-success text-white">
-                            <i class="fas fa-bell me-2"></i>
-                            <strong>${title}</strong>
-                            <button type="button" class="btn-close btn-close-white" onclick="this.parentElement.parentElement.remove()"></button>
-                        </div>
-                        <div class="toast-body">${message}</div>
-                    `;
-                    document.body.appendChild(toast);
-                    setTimeout(() => toast.remove(), 7000);
+                    loadNotifications(); // Tải lại danh sách sau khi nhận thông báo mới
                 });
 
                 connection.start()
                     .then(() => {
-                        console.log("✅ SignalR Connected");
-                        loadNotifications();   // ← Gọi hàm load thông báo từ DB
+                        console.log("SignalR Connected");
+                        loadNotifications();
                     })
-                    .catch(err => console.error("❌ SignalR Error:", err));
+                    .catch(err => console.error("SignalR Error:", err));
             </text>
         }
     </script>

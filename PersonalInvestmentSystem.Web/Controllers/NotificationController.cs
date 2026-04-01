@@ -28,6 +28,7 @@ namespace PersonalInvestmentSystem.Web.Controllers
                 .Take(5)
                 .Select(n => new
                 { 
+                    id = n.Id,
                     title = n.Title,
                     message = n.Message,
                     createdDate = n.CreatedDate.ToString("dd/MM/yyyy:mm"),
@@ -43,6 +44,40 @@ namespace PersonalInvestmentSystem.Web.Controllers
                 unreadCount = unreadCount
             });
 
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MarkAsRead(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return BadRequest();
+            var notification = await _unitOfWork.Notifications.GetByIdAsync(id);
+
+            if (notification != null && notification.UserId == userId)
+            {
+                notification.IsRead = true;
+                _unitOfWork.Notifications.Update(notification);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            return Ok();
+        }
+
+        // Đánh dấu tất cả là đã đọc (tùy chọn)
+        [HttpPost]
+        public async Task<IActionResult> MarkAllAsRead()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return BadRequest();
+
+            var notifications = await _unitOfWork.Notifications.FindAsync(n => n.UserId == userId && !n.IsRead);
+            foreach (var noti in notifications)
+            {
+                noti.IsRead = true;
+                _unitOfWork.Notifications.Update(noti);
+            }
+            await _unitOfWork.SaveChangesAsync();
+
+            return Ok();
         }
     }
 }
