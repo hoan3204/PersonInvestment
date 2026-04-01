@@ -1,0 +1,101 @@
+﻿@model PersonalInvestmentSystem.Web.ViewModels.Admin.AdminDashboardViewModel
+@{
+    ViewBag.Title = "Admin Dashboard";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <h2 class="mb-4">Tổng quan Hệ thống</h2>
+
+    <!-- Thống kê Cards -->
+    <div class="row g-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5>Tổng Người dùng</h5>
+                    <h2>@Model.TotalUsers</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Tổng Sản phẩm</h5>
+                    <h2>@Model.TotalProducts</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5>Tổng Giao dịch</h5>
+                    <h2>@Model.TotalTransactions</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>Tổng Giá trị GD</h5>
+                    <h2>@Model.TotalTransactionAmount.ToString("N0") ₫</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <!-- Giao dịch gần đây -->
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5>Giao dịch gần đây</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Người dùng</th>
+                                <th>Sản phẩm</th>
+                                <th>Loại</th>
+                                <th class="text-end">Số tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in Model.RecentTransactions)
+                            {
+                                <tr>
+                                    <td>@t.CreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@t.UserFullName</td>
+                                    <td>@t.ProductName</td>
+                                    <td><span class="badge @(t.Type == "Buy" ? "bg-success" : "bg-danger")">@t.Type</span></td>
+                                    <td class="text-end">@t.TotalAmount.ToString("N0") ₫</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top sản phẩm -->
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5>Top sản phẩm giao dịch nhiều</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        @foreach (var p in Model.TopProducts)
+                        {
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>@p.ProductName</span>
+                                <span class="badge bg-primary">@p.TransactionCount GD - @p.TotalVolume.ToString("N0") ₫</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

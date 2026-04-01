@@ -1,0 +1,40 @@
+﻿@model IEnumerable<PersonalInvestmentSystem.Web.Domain.Entities.Transaction>
+@{
+    ViewData["Title"] = "Lịch sử Giao dịch";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <h2>Lịch sử Giao dịch</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Ngày</th>
+                <th>Sản phẩm</th>
+                <th>Loại</th>
+                <th>Số lượng</th>
+                <th>Giá</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in Model.OrderByDescending(x => x.CreatedDate))
+            {
+                <tr>
+                    <td>@t.CreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@t.Product?.Name</td>
+                    <td>
+                        <span class="badge @(t.Type == PersonalInvestmentSystem.Web.Domain.Enums.TransactionType.Buy ? "bg-success" : "bg-danger")">
+                            @(t.Type == PersonalInvestmentSystem.Web.Domain.Enums.TransactionType.Buy ? "MUA" : "BÁN")
+                        </span>
+                    </td>
+                    <td>@t.Quantity</td>
+                    <td>@t.Price.ToString("N0") ₫</td>
+                    <td>@t.TotalAmount.ToString("N0") ₫</td>
+                    <td><span class="badge bg-success">Hoàn thành</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

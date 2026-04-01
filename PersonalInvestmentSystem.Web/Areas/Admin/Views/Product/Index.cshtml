@@ -1,0 +1,52 @@
+﻿@model PersonalInvestmentSystem.Web.ViewModels.Product.PagedResult<PersonalInvestmentSystem.Web.Domain.Entities.InvestmentProduct>
+@using PersonalInvestmentSystem.Web.Domain.Enums
+
+@{
+    ViewBag.Title = "Quản lý Sản phẩm Đầu tư";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>Danh sách Sản phẩm</h3>
+    <a asp-action="Create" class="btn btn-success"><i class="fas fa-plus"></i> Thêm sản phẩm mới</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<table class="table table-bordered table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>Mã</th>
+            <th>Tên sản phẩm</th>
+            <th>Loại</th>
+            <th>Giá hiện tại</th>
+            <th>Thay đổi</th>
+            <th>Rủi ro</th>
+            <th>Nổi bật</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td>@item.Code</td>
+                <td>@item.Name</td>
+                <td>@item.Type</td>
+                <td class="text-end">@item.CurrentPrice.ToString("N0") ₫</td>
+                <td class="@(item.ChangePercent >= 0 ? "text-success" : "text-danger")">@item.ChangePercent %</td>
+                <td><span class="badge bg-@(item.RiskLevel == RiskLevel.Low ? "success" : item.RiskLevel == RiskLevel.Medium ? "warning" : "danger")">@item.RiskLevel</span></td>
+                <td>@(item.IsFeatured ? "✅" : "")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Sửa</a>
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Xóa sản phẩm này?')">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

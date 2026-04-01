@@ -1,0 +1,53 @@
+﻿@model PersonalInvestmentSystem.Web.ViewModels.Product.PagedResult<PersonalInvestmentSystem.Web.Domain.Entities.InvestmentProduct>
+@{
+    ViewData["Title"] = "Danh sách Sản phẩm Đầu tư";
+}
+
+<div class="container mt-4">
+    <h2>Danh sách Sản phẩm Đầu tư</h2>
+
+    <form asp-action="Index" method="get" class="mb-4">
+        <div class="input-group w-50">
+            <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Tìm theo tên hoặc mã..." />
+            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+        </div>
+    </form>
+
+    <div class="row">
+        @foreach (var product in Model.Items)
+        {
+            <div class="col-md-3 mb-4">
+                <div class="card h-100">
+                    @if (!string.IsNullOrEmpty(product.ImageUrl))
+                    {
+                        <img src="@product.ImageUrl" class="card-img-top" alt="@product.Name" style="height:180px; object-fit:cover;" />
+                    }
+                    <div class="card-body">
+                        <h5 class="card-title">@product.Name</h5>
+                        <p class="card-text text-muted">@product.Code</p>
+                        <p class="card-text fw-bold text-primary">@product.CurrentPrice.ToString("N0") ₫</p>
+                        <span class="badge bg-@(product.RiskLevel == PersonalInvestmentSystem.Web.Domain.Enums.RiskLevel.Low ? "success" : product.RiskLevel == PersonalInvestmentSystem.Web.Domain.Enums.RiskLevel.Medium ? "warning" : "danger")">
+                            @product.RiskLevel
+                        </span>
+                    </div>
+                    <div class="card-footer">
+                        <a asp-action="Details" asp-route-id="@product.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                        <a href="#" class="btn btn-sm btn-primary">Mua ngay</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Phân trang đơn giản -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-search="@ViewBag.Search">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+</div>

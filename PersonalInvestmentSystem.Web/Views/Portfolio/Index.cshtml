@@ -1,0 +1,116 @@
+﻿@using System.Text.Json
+@model PersonalInvestmentSystem.Web.ViewModels.Portfolio.PortfolioViewModel
+@{
+    ViewData["Title"] = "Danh mục Đầu tư của tôi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Danh mục Đầu tư Cá nhân</h2>
+    <div class="mb-3">
+        <a asp-action="ExportExcel" class="btn btn-success">
+            <i class="fas fa-file-excel"></i> Xuất Excel
+        </a>
+        <a asp-action="ExportPdf" class="btn btn-danger">
+            <i class="fas fa-file-pdf"></i> Xuất PDF
+        </a>
+    </div>
+    <!-- Tổng quan -->
+    <div class="row mb-5">
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h4 class="text-success">@Model.TotalValue.ToString("N0") ₫</h4>
+                    <p class="text-muted">Tổng giá trị hiện tại</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4>@Model.TotalProfit.ToString("N0") ₫</h4>
+                    <p class="text-@(Model.TotalProfit >= 0 ? "text-success" : "text-danger")">
+                        Lợi nhuận/Lỗ (@Model.ROIPercent.ToString("F2")%)
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4>@Model.Items.Count</h4>
+                    <p class="text-muted">Sản phẩm đang sở hữu</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biểu đồ phân bổ -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Phân bổ tài sản</div>
+                <div class="card-body">
+                    <canvas id="portfolioChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh sách chi tiết -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Chi tiết danh mục</div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th class="text-end">SL</th>
+                                <th class="text-end">Giá TB</th>
+                                <th class="text-end">Giá hiện tại</th>
+                                <th class="text-end">Lãi/Lỗ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td><strong>@item.ProductName</strong><br /><small class="text-muted">@item.ProductCode</small></td>
+                                    <td class="text-end">@item.Quantity</td>
+                                    <td class="text-end">@item.AverageBuyPrice.ToString("N0")</td>
+                                    <td class="text-end">@item.CurrentPrice.ToString("N0")</td>
+                                    <td class="text-end @(item.Profit >= 0 ? "text-success" : "text-danger")">
+                                        @item.Profit.ToString("N0") ₫ (@item.ProfitPercent.ToString("F1")%)
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('portfolioChart');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items.Select(x => x.ProductName))),
+                datasets: [{
+                    data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items.Select(x => x.Quantity * x.CurrentPrice))),
+                    backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    </script>
+}
