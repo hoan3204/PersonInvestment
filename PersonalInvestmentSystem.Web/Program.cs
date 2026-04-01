@@ -9,6 +9,7 @@ using PersonalInvestmentSystem.Web.Services.Interfaces;
 using PersonalInvestmentSystem.Web.Services.Implementations;
 using PersonalInvestmentSystem.Web.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using PersonalInvestmentSystem.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 

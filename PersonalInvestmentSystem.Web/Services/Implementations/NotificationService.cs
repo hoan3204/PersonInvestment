@@ -1,34 +1,83 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using PersonalInvestmentSystem.Web.Hubs;
 using PersonalInvestmentSystem.Web.Services.Interfaces;
+using PersonalInvestmentSystem.Web.Hubs;
+using PersonalInvestmentSystem.Web.Services.Interfaces;
+using PersonalInvestmentSystem.Web.UnitOfWork;
+using PersonalInvestmentSystem.Web.Domain.Entities;
 
-namespace PersonalInvestmentSystem.Web.Services.Implementations
+namespace PersonalInvestmentSystem.Services.Implementations
 {
     public class NotificationService : INotificationService
     {
         private readonly IHubContext<NotificationHub> _hubContext;
-        public NotificationService(IHubContext<NotificationHub> hubContext)
+        private readonly IUnitOfWork _unitOfWork;
+
+        public NotificationService(IHubContext<NotificationHub> hubContext, IUnitOfWork unitOfWork)
         {
             _hubContext = hubContext;
+            _unitOfWork = unitOfWork;
         }
-            
 
         public async Task SendBuySuccessNotificationAsync(string userId, string productName, decimal amount)
         {
-            await _hubContext.Clients.User(userId).SendAsync("ReceiveNotification", "Mua thành công!", $"Bạn đã mua {productName} với tổng số tiền {amount} đ");
+            string title = "Mua thành công!";
+            string message = $"Bạn đã mua {productName} với tổng số tiền {amount} đ";
+
+            var notification = new Notification
+            { 
+                UserId = userId,
+                Title = title,
+                Message = message,
+                IsRead = false,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            await _unitOfWork.Notifications.AddAsync(notification);
+            await _unitOfWork.SaveChangesAsync();
+
+            await _hubContext.Clients.User(userId).SendAsync("ReceiveNotification", title, message);
+
         }
+
         public async Task SendSellSuccessNotificationAsync(string userId, string productName, decimal amount)
         {
-            await _hubContext.Clients.User(userId).SendAsync("ReceiveNotification",
-                "Bán thành công!",
-                $"Bạn đã bán {productName} và nhận được {amount:N0} ₫");
+            string title = "Bán thành công!";
+            string message = $"Bạn đã bán {productName} và nhận được {amount:N0} ₫";
+
+            var notification = new Notification
+            {
+                UserId = userId,
+                Title = title,
+                Message = message,
+                IsRead = false,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            await _unitOfWork.Notifications.AddAsync(notification);
+            await _unitOfWork.SaveChangesAsync();
+
+            await _hubContext.Clients.User(userId).SendAsync("ReceiveNotification", title, message);
         }
 
         public async Task SendLowBalanceWarningAsync(string userId, decimal currentBalance)
         {
-            await _hubContext.Clients.User(userId).SendAsync("ReceiveNotification",
-                "Cảnh báo số dư!",
-                $"Số dư ví của bạn chỉ còn {currentBalance:N0} ₫. Hãy nạp thêm để tiếp tục giao dịch.");
+            string title = "Cảnh báo số dư!";
+            string message = $"Số dư ví của bạn chỉ còn {currentBalance:N0} ₫. Hãy nạp thêm.";
+
+            var notification = new Notification
+            {
+                UserId = userId,
+                Title = title,
+                Message = message,
+                IsRead = false,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            await _unitOfWork.Notifications.AddAsync(notification);
+            await _unitOfWork.SaveChangesAsync();
+
+            await _hubContext.Clients.User(userId).SendAsync("ReceiveNotification", title, message);
         }
     }
 }
