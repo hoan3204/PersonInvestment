@@ -6,7 +6,7 @@
 
 <div class="d-flex justify-content-between mb-4">
     <h3>Quản lý Sản phẩm Đầu tư</h3>
-    <a asp-action="Create" class="btn btn-success"><i class="fas fa-plus"></i> Thêm mới</a>
+    <a asp-area="Admin" asp-controller="Product" asp-action="Create" class="btn btn-success" ><i class="fas fa-plus"></i> Thêm mới</a>
 </div>
 
 @if (TempData["Success"] != null)
@@ -41,8 +41,8 @@
                 <td class="text-center">@(p.IsFeatured ? "✅" : "")</td>
                 <td>@(p.IsActive ? "Hoạt động" : "Tạm ngừng")</td>
                 <td>
-                    <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary">Sửa</a>
-                    <form asp-action="Delete" asp-route-id="@p.Id" method="post" style="display:inline;" onsubmit="return confirm('Xóa sản phẩm này?')">
+                    <a asp-area="Admin" asp-controller="Product" asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary">Sửa</a>
+                    <form asp-area="Admin" asp-controller="Product" asp-action="Delete" asp-route-id="@p.Id" method="post" style="display:inline;" onsubmit="return confirm('Xóa sản phẩm này?')">
                         <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
                     </form>
                 </td>
