@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using PersonalInvestmentSystem.Web.Services.Interfaces;
 using PersonalInvestmentSystem.Web.UnitOfWork;
 using PersonalInvestmentSystem.Web.Domain.Entities;
 using PersonalInvestmentSystem.Web.Domain.Enums;
 using PersonalInvestmentSystem.Web.ViewModels.Product;
+
 
 namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
 {
@@ -14,10 +16,12 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
     {
         private readonly IProductService _productService;
         private readonly IUnitOfWork _unitOfWork;
-        public ProductController(IProductService productService, IUnitOfWork unitOfWork)
+        private readonly IWebHostEnvironment _webHostEnvironment;
+        public ProductController(IProductService productService, IUnitOfWork unitOfWork, IWebHostEnvironment webHostEnvironment)
         {
             _productService = productService;
             _unitOfWork = unitOfWork;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         //get Admin/Product
@@ -38,13 +42,18 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
         //post Admin/Product/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(InvestmentProduct model)
+        public async Task<IActionResult> Create(InvestmentProduct model, IFormFile? ImageFile)
         {
+            RemoveNavigationValidationErrors();
             if (ModelState.IsValid)
             {
+                if (ImageFile != null)
+                {
+                    model.ImageUrl = await UploadImageAsync(ImageFile);
+                }
                 model.CreatedDate = DateTime.UtcNow;
                 await _productService.AddProductAsync(model);
-                TempData["success"] = "Thêm sản phẩm thành công.";
+                TempData["Success"] = "Thêm sản phẩm thành công.";
                 return RedirectToAction(nameof(Index));
             }
             await LoadDropdowns();
@@ -64,8 +73,9 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
         //get Admin/Product/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, InvestmentProduct model)
+        public async Task<IActionResult> Edit(int id, InvestmentProduct model, IFormFile? ImageFile)
         {
+            RemoveNavigationValidationErrors();
             if (id != model.Id) return NotFound();
 
             if (ModelState.IsValid)
@@ -73,6 +83,10 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
                 var existing = await _productService.GetProductByIdAsync(id);
                 if (existing == null) return NotFound();
 
+                if (ImageFile != null && ImageFile.Length > 0)
+                {
+                    existing.ImageUrl = await UploadImageAsync(ImageFile);
+                }
                 //cap nhat cac truong
                 existing.Name = model.Name;
                 existing.Code = model.Code;
@@ -110,16 +124,64 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
         {
             ViewBag.Categories = (await _unitOfWork.Categories.GetAllAsync())
                 .Where(c => c.IsActive)
-                .Select(c => new { c.Id, c.Name });
+                .Select(c => new SelectListItem
+                {
+                    Value = c.Id.ToString(),
+                    Text = c.Name
+                });
+
             ViewBag.Publishers = (await _unitOfWork.Publishers.GetAllAsync())
                 .Where(p => p.IsActive)
-                .Select(p => new { p.Id, p.Name });
-            ViewBag.InvestmentTypes = Enum.GetValues(typeof(InvestmentType))
+                .Select(p => new SelectListItem
+                { 
+                    Value = p.Id.ToString(),
+                    Text = p.Name
+                })
+                .ToList();
+
+            ViewBag.Types = Enum.GetValues(typeof(InvestmentType))
                 .Cast<InvestmentType>()
-                .Select(e => new { Value = (int)e, Text = e.ToString() });
+                .Select(e => new SelectListItem
+                {
+                    Value = ((int)e).ToString(),
+                    Text = e.ToString()
+                })
+                .ToList();
             ViewBag.RiskLevels = Enum.GetValues(typeof(RiskLevel))
                 .Cast<RiskLevel>()
-                .Select(e => new { Value = (int)e, Text = e.ToString() });
+                .Select(e => new SelectListItem
+                {
+                    Value = ((int)e).ToString(),
+                    Text = e.ToString()
+                })
+                .ToList();
+        }
+
+        //them anh
+        public async Task<string?> UploadImageAsync(IFormFile file)
+        {
+            if (file == null || file.Length == 0) return null;
+
+            string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            string uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
+            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            return "/images/products" + uniqueFileName;
+        }
+        private void RemoveNavigationValidationErrors()
+        {
+            ModelState.Remove(nameof(InvestmentProduct.Category));
+            ModelState.Remove(nameof(InvestmentProduct.Publisher));
+            ModelState.Remove(nameof(InvestmentProduct.Transactions));
+            ModelState.Remove(nameof(InvestmentProduct.Reviews));
         }
     }
 }
