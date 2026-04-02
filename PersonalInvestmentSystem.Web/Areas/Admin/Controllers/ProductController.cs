@@ -14,14 +14,23 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
     [Authorize(Roles ="Admin")]
     public class ProductController : Controller
     {
+        private readonly ICloudinaryService _cloudinaryService;
         private readonly IProductService _productService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _webHostEnvironment;
-        public ProductController(IProductService productService, IUnitOfWork unitOfWork, IWebHostEnvironment webHostEnvironment)
+        private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"
+        };
+
+        private readonly ILogger<ProductController> _logger;
+        public ProductController(IProductService productService, IUnitOfWork unitOfWork, IWebHostEnvironment webHostEnvironment, ILogger<ProductController> logger,ICloudinaryService cloudinaryService)
         {
             _productService = productService;
             _unitOfWork = unitOfWork;
             _webHostEnvironment = webHostEnvironment;
+            _logger = logger;
+            _cloudinaryService = cloudinaryService;
         }
 
         //get Admin/Product
@@ -45,16 +54,26 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Create(InvestmentProduct model, IFormFile? ImageFile)
         {
             RemoveNavigationValidationErrors();
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                if (ImageFile != null)
+                await LoadDropdowns();
+                return View(model);
+            }
+            try
+            {
+                if (ImageFile != null && ImageFile.Length > 0)
                 {
-                    model.ImageUrl = await UploadImageAsync(ImageFile);
+                    model.ImageUrl = await _cloudinaryService.UploadImageAsync(ImageFile, "products");
                 }
                 model.CreatedDate = DateTime.UtcNow;
                 await _productService.AddProductAsync(model);
                 TempData["Success"] = "Thêm sản phẩm thành công.";
                 return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Create product failed. ProductCode={ProductCode}", model.Code);
+                ModelState.AddModelError(string.Empty, "Không thể thêm sản phẩm. Vui lòng thử lại.");
             }
             await LoadDropdowns();
             return View(model);
@@ -78,15 +97,25 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
             RemoveNavigationValidationErrors();
             if (id != model.Id) return NotFound();
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
+                await LoadDropdowns();
+                return View(model);
+            }
+            try
+            { 
                 var existing = await _productService.GetProductByIdAsync(id);
                 if (existing == null) return NotFound();
 
                 if (ImageFile != null && ImageFile.Length > 0)
                 {
-                    existing.ImageUrl = await UploadImageAsync(ImageFile);
+                    if (!string.IsNullOrEmpty(existing.ImageUrl))
+                    {
+                        await _cloudinaryService.DeleteImageAsync(existing.ImageUrl);
+                    }
+                    existing.ImageUrl = await _cloudinaryService.UploadImageAsync(ImageFile, "products");
                 }
+
                 //cap nhat cac truong
                 existing.Name = model.Name;
                 existing.Code = model.Code;
@@ -98,7 +127,7 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
                 existing.PreviousPrice = model.PreviousPrice;
                 existing.ChangePercent = model.ChangePercent;
                 existing.RiskLevel = model.RiskLevel;
-                existing.ImageUrl = model.ImageUrl;
+               
                 existing.IsFeatured = model.IsFeatured;
                 existing.IsActive = model.IsActive;
 
@@ -106,6 +135,11 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
                 TempData["Success"] = "Cập nhật sản phẩm thành công.";
                 return RedirectToAction(nameof(Index));
 
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Edit product failed. ProductId={ProductId}", id);
+                ModelState.AddModelError(string.Empty, "Không thể cập nhật sản phẩm. Vui lòng thử lại.");
             }
             await LoadDropdowns();
             return View(model);
@@ -161,12 +195,22 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
         public async Task<string?> UploadImageAsync(IFormFile file)
         {
             if (file == null || file.Length == 0) return null;
+            var extension = Path.GetExtension(file.FileName);
+            if (string.IsNullOrWhiteSpace(extension) || !AllowedImageExtensions.Contains(extension))
+            {
+                throw new InvalidOperationException("Định dạng ảnh không hợp lệ.");
+            }
 
-            string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
-            if (!Directory.Exists(uploadsFolder))
-                Directory.CreateDirectory(uploadsFolder);
+            var webRootPath = _webHostEnvironment.WebRootPath;
+            if (string.IsNullOrWhiteSpace(webRootPath))
+            {
+                webRootPath = Path.Combine(_webHostEnvironment.ContentRootPath, "wwwroot");
+            }
 
-            string uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
+            string uploadsFolder = Path.Combine(webRootPath, "images", "products");
+            Directory.CreateDirectory(uploadsFolder);
+
+            string uniqueFileName = $"{Guid.NewGuid():N}{extension}";
             string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
             using (var fileStream = new FileStream(filePath, FileMode.Create))
@@ -174,7 +218,7 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
                 await file.CopyToAsync(fileStream);
             }
 
-            return "/images/products" + uniqueFileName;
+            return $"/images/products/{uniqueFileName}";
         }
         private void RemoveNavigationValidationErrors()
         {
