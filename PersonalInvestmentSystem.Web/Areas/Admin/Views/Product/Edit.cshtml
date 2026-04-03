@@ -6,15 +6,28 @@
 
 <div class="card">
     <div class="card-header bg-warning text-dark">
-        <h5><i class="fas fa-edit"></i> Chỉnh sửa Sản phẩm: @Model.Name</h5>
+        <h5><i class="fas fa-edit"></i> Chỉnh sửa: @Model.Name</h5>
     </div>
     <div class="card-body">
-        <form asp-area="Admin" asp-controller="Product" asp-action="Edit" method="post" enctype="multipart/form-data">
+        <form asp-action="Edit" method="post" enctype="multipart/form-data">
             <input type="hidden" asp-for="Id" />
-            <input type="hidden" asp-for="ImageUrl" />
+
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-            <!-- Giống Create.cshtml, chỉ khác phần button -->
+            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+            {
+                <div class="mb-3">
+                    <label>Hình ảnh hiện tại:</label><br />
+                    <img src="@Model.ImageUrl" style="max-height: 200px; border-radius: 8px;" alt="Current" />
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Thay đổi hình ảnh mới (nếu có)</label>
+                <input type="file" name="ImageFile" class="form-control" accept="image/*" />
+            </div>
+
+            <!-- Các trường khác -->
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
@@ -36,71 +49,43 @@
             </div>
 
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
-                        <label class="form-label">Loại</label>
+                        <label>Loại</label>
                         <select asp-for="Type" class="form-select" asp-items="ViewBag.Types"></select>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
-                        <label class="form-label">Danh mục</label>
+                        <label>Danh mục</label>
                         <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.Categories"></select>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
-                        <label class="form-label">Nhà phát hành</label>
+                        <label>Nhà phát hành</label>
                         <select asp-for="PublisherId" class="form-select" asp-items="ViewBag.Publishers"></select>
                     </div>
                 </div>
-            </div>
-
-            <div class="row">
                 <div class="col-md-3">
                     <div class="mb-3">
-                        <label class="form-label">Giá hiện tại</label>
+                        <label>Giá hiện tại</label>
                         <input asp-for="CurrentPrice" type="number" class="form-control" />
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label class="form-label">Giá trước đó</label>
-                        <input asp-for="PreviousPrice" type="number" class="form-control" />
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label class="form-label">Rủi ro</label>
-                        <select asp-for="RiskLevel" class="form-select" asp-items="ViewBag.RiskLevels"></select>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        @if (!string.IsNullOrEmpty(Model.ImageUrl))
-                        {
-                            <div class="mb-3">
-                                <label>hinh anh hien tai:</label>
-                                <img src="@Model.ImageUrl" alt="Current Image" style="max-height: 150px; border-radius: 8px;" />
-                            </div>
-                        }
-                        <label class="form-label">Thay đổi hình ảnh</label>
-                        <input type="file" name="ImageFile" class="form-control" accept="image/*" />
                     </div>
                 </div>
             </div>
 
             <div class="form-check mb-3">
                 <input asp-for="IsFeatured" type="checkbox" class="form-check-input" />
-                <label asp-for="IsFeatured" class="form-check-label">Sản phẩm nổi bật</label>
+                <label asp-for="IsFeatured" class="form-check-label">Nổi bật</label>
             </div>
 
             <div class="form-check mb-4">
                 <input asp-for="IsActive" type="checkbox" class="form-check-input" />
-                <label asp-for="IsActive" class="form-check-label">Đang hoạt động</label>
+                <label asp-for="IsActive" class="form-check-label">Hoạt động</label>
             </div>
 
-            <button type="submit" class="btn btn-warning me-2">Cập nhật</button>
+            <button type="submit" class="btn btn-warning">Cập nhật</button>
             <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
         </form>
     </div>
