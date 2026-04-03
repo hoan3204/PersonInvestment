@@ -7,6 +7,7 @@ namespace PersonalInvestmentSystem.Web.Services.Implementations
     public class WalletService : IWalletService
     {
         private readonly IUnitOfWork _unitOfWork;
+
         public WalletService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
