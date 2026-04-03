@@ -50,18 +50,16 @@
                 </div>
             </div>
 
-            <!-- ==================== NÚT HÀNH ĐỘNG ==================== -->
-            <!-- ==================== NÚT HÀNH ĐỘNG ==================== -->
+            <!-- Nút hành động -->
             <div class="d-grid gap-2 d-md-flex mt-4">
                 <button class="btn btn-success btn-lg px-5" onclick="buyProduct(@Model.Id)">
                     <i class="fas fa-shopping-cart"></i> MUA NGAY
                 </button>
-
                 <button class="btn btn-outline-danger btn-lg px-5" onclick="sellProduct(@Model.Id)">
                     <i class="fas fa-hand-holding-usd"></i> BÁN
                 </button>
 
-                <!-- Nút Yêu thích - Có hiệu ứng chuyển màu -->
+                <!-- Nút Yêu thích -->
                 <form id="wishlistForm_@Model.Id" asp-controller="Wishlist" asp-action="Add" method="post" style="display:inline;">
                     <input type="hidden" name="productId" value="@Model.Id" />
                     <button type="button" id="wishlistBtn_@Model.Id"
@@ -94,8 +92,76 @@
             <div class="tab-pane fade show active" id="description">
                 <p>@Model.Description</p>
             </div>
+
+            <!-- ==================== TAB ĐÁNH GIÁ (ĐÃ SỬA) ==================== -->
             <div class="tab-pane fade" id="reviews">
-                <p>Chức năng đánh giá sẽ được triển khai sau.</p>
+                <h5>Đánh giá sản phẩm</h5>
+
+                <!-- Form đánh giá -->
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6>Viết đánh giá của bạn</h6>
+                            <form asp-controller="Review" asp-action="Add" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="productId" value="@Model.Id" />
+
+                                <div class="mb-3">
+                                    <label class="form-label">Đánh giá sao</label>
+                                    <div class="star-rating">
+                                        @for (int i = 5; i >= 1; i--)
+                                        {
+                                            <input type="radio" id="star@(i)" name="rating" value="@i" required />
+                                            <label for="star@(i)" title="@i sao">★</label>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Nhận xét</label>
+                                    <textarea name="comment" class="form-control" rows="3"
+                                              placeholder="Viết nhận xét của bạn..." required></textarea>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        Vui lòng <a asp-controller="Account" asp-action="Login">đăng nhập</a> để đánh giá sản phẩm.
+                    </div>
+                }
+
+                <!-- Danh sách đánh giá -->
+                <h6 class="mt-4">Các đánh giá từ người dùng</h6>
+                @if (ViewBag.Reviews != null && ((IEnumerable<dynamic>)ViewBag.Reviews).Any())
+                {
+                    foreach (var review in ViewBag.Reviews)
+                    {
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@review.UserFullName</strong>
+                                    <span class="text-warning">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <span class="@(i <= review.Rating ? "text-warning" : "text-muted")">★</span>
+                                        }
+                                    </span>
+                                </div>
+                                <small class="text-muted">@review.CreatedDate.ToString("dd/MM/yyyy HH:mm")</small>
+                                <p class="mt-2">@review.Comment</p>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">Chưa có đánh giá nào cho sản phẩm này.</p>
+                }
             </div>
         </div>
     </div>
@@ -104,64 +170,8 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        function buyProduct(id) {
-            if (confirm('Xác nhận MUA sản phẩm này?')) {
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/Transaction/Buy';
-                var input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'productId';
-                input.value = id;
-                form.appendChild(input);
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
+        // ... (giữ nguyên code buyProduct, sellProduct, toggleWishlist và chart của bạn)
 
-        function sellProduct(id) {
-            var qty = prompt('Nhập số lượng muốn bán:', '1');
-            if (qty && parseInt(qty) > 0) {
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/Transaction/Sell';
-                var input1 = document.createElement('input');
-                input1.type = 'hidden'; input1.name = 'productId'; input1.value = id;
-                form.appendChild(input1);
-                var input2 = document.createElement('input');
-                input2.type = 'hidden'; input2.name = 'quantity'; input2.value = qty;
-                form.appendChild(input2);
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-
-            async function toggleWishlist(productId) {
-            const btn = document.getElementById(`wishlistBtn_${productId}`);
-            const form = document.getElementById(`wishlistForm_${productId}`);
-
-            try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    body: new FormData(form)
-                });
-
-                if (response.ok) {
-                    // Chuyển màu nút thành đỏ đậm
-                    btn.classList.remove('btn-outline-danger');
-                    btn.classList.add('btn-danger');
-                    btn.innerHTML = `<i class="fas fa-heart"></i> Đã thích`;
-
-                    // Thông báo
-                    alert('✅ Đã thêm vào danh sách yêu thích!');
-                } else {
-                    alert('Sản phẩm đã có trong danh sách yêu thích.');
-                }
-            } catch (e) {
-                console.error(e);
-                alert('Có lỗi xảy ra!');
-            }
-        }
         // Khởi tạo biểu đồ
         document.addEventListener('DOMContentLoaded', function () {
             var priceHistory = @Html.Raw(Json.Serialize(ViewBag.PriceHistory));

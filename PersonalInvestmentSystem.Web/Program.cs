@@ -65,6 +65,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IWatchlistService, WatchListService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
 var app = builder.Build();
 
 app.MapHub<NotificationHub>("/notificationHub");

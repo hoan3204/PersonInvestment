@@ -6,9 +6,11 @@ namespace PersonalInvestmentSystem.Web.Controllers
     public class ProductController : Controller
     {
         private readonly IProductService _productService;
-        public ProductController(IProductService productService)
+        private readonly IReviewService _reviewService;
+        public ProductController(IProductService productService, IReviewService reviewService)
         {
             _productService = productService;
+            _reviewService = reviewService;
         }
 
         //danh sach san pham
@@ -35,6 +37,17 @@ namespace PersonalInvestmentSystem.Web.Controllers
                 new { Date = "30/03", Price = product.CurrentPrice * 0.998m },
                 new { Date = "31/03", Price = product.CurrentPrice }
             };
+
+            //review
+            var review =await _reviewService.GetReviewsByProductAsync(id);
+            ViewBag.Reviews = review.Select(r => new
+            {
+                UserFullName = r.User?.FullName ?? "Người dùng ẩn danh",
+                Rating = r.Rating,
+                Comment = r.Comment,
+                CreatedDate = r.CreatedDate
+            }).ToList();
+
             return View(product);
 
         }
