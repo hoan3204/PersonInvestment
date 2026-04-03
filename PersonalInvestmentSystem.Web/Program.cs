@@ -66,6 +66,8 @@ builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection(
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IWatchlistService, WatchListService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
+
+builder.Services.Configure<MoMoSettings>(builder.Configuration.GetSection("MoMoSettings"));
 var app = builder.Build();
 
 app.MapHub<NotificationHub>("/notificationHub");
