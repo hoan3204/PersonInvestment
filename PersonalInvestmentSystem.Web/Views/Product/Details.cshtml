@@ -6,11 +6,12 @@
 
 <div class="container mt-4">
     <div class="row">
-        <!-- Phần hình ảnh & thông tin cơ bản -->
+        <!-- Phần hình ảnh -->
         <div class="col-lg-5">
             @if (!string.IsNullOrEmpty(Model.ImageUrl))
             {
-                <img src="@Model.ImageUrl" class="img-fluid rounded shadow" alt="@Model.Name" style="width:100%; height:380px; object-fit:cover;" />
+                <img src="@Model.ImageUrl" class="img-fluid rounded shadow" alt="@Model.Name"
+                     style="width:100%; height:380px; object-fit:cover;" />
             }
             else
             {
@@ -49,13 +50,26 @@
                 </div>
             </div>
 
-            <!-- Nút hành động -->
-            <div class="d-grid gap-2 d-md-flex">
-                <button class="btn btn-success btn-lg px-5" onclick="buyProduct(@Model.Id)">MUA NGAY</button>
-                <button class="btn btn-outline-danger btn-lg px-5" onclick="sellProduct(@Model.Id)">BÁN</button>
-                <button class="btn btn-outline-primary btn-lg px-4" onclick="addToWishlist(@Model.Id)">
-                    <i class="fas fa-heart"></i> Yêu thích
+            <!-- ==================== NÚT HÀNH ĐỘNG ==================== -->
+            <!-- ==================== NÚT HÀNH ĐỘNG ==================== -->
+            <div class="d-grid gap-2 d-md-flex mt-4">
+                <button class="btn btn-success btn-lg px-5" onclick="buyProduct(@Model.Id)">
+                    <i class="fas fa-shopping-cart"></i> MUA NGAY
                 </button>
+
+                <button class="btn btn-outline-danger btn-lg px-5" onclick="sellProduct(@Model.Id)">
+                    <i class="fas fa-hand-holding-usd"></i> BÁN
+                </button>
+
+                <!-- Nút Yêu thích - Có hiệu ứng chuyển màu -->
+                <form id="wishlistForm_@Model.Id" asp-controller="Wishlist" asp-action="Add" method="post" style="display:inline;">
+                    <input type="hidden" name="productId" value="@Model.Id" />
+                    <button type="button" id="wishlistBtn_@Model.Id"
+                            class="btn btn-outline-danger btn-lg px-4 wishlist-btn"
+                            onclick="toggleWishlist(@Model.Id)">
+                        <i class="fas fa-heart"></i> Yêu thích
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -66,7 +80,7 @@
         <canvas id="priceChart" height="120"></canvas>
     </div>
 
-    <!-- Tab thông tin thêm (mô tả, đánh giá...) -->
+    <!-- Tab -->
     <div class="mt-5">
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
@@ -79,10 +93,9 @@
         <div class="tab-content mt-3">
             <div class="tab-pane fade show active" id="description">
                 <p>@Model.Description</p>
-                <p class="text-muted">Thông tin chi tiết sẽ được cập nhật đầy đủ trong phiên bản sau...</p>
             </div>
             <div class="tab-pane fade" id="reviews">
-                <p>Chức năng đánh giá sản phẩm sẽ được triển khai ở bước sau.</p>
+                <p>Chức năng đánh giá sẽ được triển khai sau.</p>
             </div>
         </div>
     </div>
@@ -96,56 +109,67 @@
                 var form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '/Transaction/Buy';
-
-                var input1 = document.createElement('input');
-                input1.type = 'hidden';
-                input1.name = 'productId';
-                input1.value = id;
-                form.appendChild(input1);
-
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'productId';
+                input.value = id;
+                form.appendChild(input);
                 document.body.appendChild(form);
                 form.submit();
             }
         }
 
         function sellProduct(id) {
-            var qty = prompt('Nhập số lượng muôn bán:', '1');
+            var qty = prompt('Nhập số lượng muốn bán:', '1');
             if (qty && parseInt(qty) > 0) {
                 var form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '/Transaction/Sell';
-
                 var input1 = document.createElement('input');
-                input1.type = 'hidden';
-                input1.name = 'productId';
-                input1.value = id;
+                input1.type = 'hidden'; input1.name = 'productId'; input1.value = id;
                 form.appendChild(input1);
-
                 var input2 = document.createElement('input');
-                input2.type = 'hidden';
-                input2.name = 'quantity';
-                input2.value = qty;
+                input2.type = 'hidden'; input2.name = 'quantity'; input2.value = qty;
                 form.appendChild(input2);
-
                 document.body.appendChild(form);
                 form.submit();
             }
         }
 
-        function addToWishlist(id) {
-            alert('Thêm vào danh sách yêu thích thành công!');
-        }
+            async function toggleWishlist(productId) {
+            const btn = document.getElementById(`wishlistBtn_${productId}`);
+            const form = document.getElementById(`wishlistForm_${productId}`);
 
-        // Khởi tạo biểu đồ giá 7 ngày
-        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form)
+                });
+
+                if (response.ok) {
+                    // Chuyển màu nút thành đỏ đậm
+                    btn.classList.remove('btn-outline-danger');
+                    btn.classList.add('btn-danger');
+                    btn.innerHTML = `<i class="fas fa-heart"></i> Đã thích`;
+
+                    // Thông báo
+                    alert('✅ Đã thêm vào danh sách yêu thích!');
+                } else {
+                    alert('Sản phẩm đã có trong danh sách yêu thích.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Có lỗi xảy ra!');
+            }
+        }
+        // Khởi tạo biểu đồ
+        document.addEventListener('DOMContentLoaded', function () {
             var priceHistory = @Html.Raw(Json.Serialize(ViewBag.PriceHistory));
-            
             if (priceHistory && priceHistory.length > 0) {
-                var labels = priceHistory.map(function(item) { return item.Date || item.date; });
-                var prices = priceHistory.map(function(item) { return item.Price || item.price; });
-                
-                var ctx = document.getElementById('priceChart').getContext('2d');
-                new Chart(ctx, {
+                var labels = priceHistory.map(item => item.Date || item.date);
+                var prices = priceHistory.map(item => item.Price || item.price);
+
+                new Chart(document.getElementById('priceChart'), {
                     type: 'line',
                     data: {
                         labels: labels,
@@ -155,29 +179,13 @@
                             borderColor: '#007bff',
                             backgroundColor: 'rgba(0, 123, 255, 0.1)',
                             borderWidth: 2,
-                            tension: 0.1,
+                            tension: 0.3,
                             fill: true
                         }]
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                ticks: {
-                                    callback: function(value) {
-                                        return value.toLocaleString('vi-VN') + ' ₫';
-                                    }
-                                }
-                            }
-                        }
+                        plugins: { legend: { display: true, position: 'top' } }
                     }
                 });
             }
