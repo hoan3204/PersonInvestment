@@ -68,6 +68,26 @@ builder.Services.AddScoped<IWatchlistService, WatchListService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddMemoryCache();
 
+//google login
+builder.Services.AddAuthentication()
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+    });
+
+// facebook login
+builder.Services.AddAuthentication()
+    .AddFacebook(options =>
+    {
+        options.AppId = builder.Configuration["Authentication:Facebook:AppId"];
+        options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"];
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+    });
+
+
+
 builder.Services.Configure<MoMoSettings>(builder.Configuration.GetSection("MoMoSettings"));
 var app = builder.Build();
 

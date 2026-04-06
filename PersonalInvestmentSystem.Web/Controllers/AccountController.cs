@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PersonalInvestmentSystem.Web.Domain.Entities;
 using PersonalInvestmentSystem.Web.UnitOfWork;
 using PersonalInvestmentSystem.Web.ViewModels;
+using System.Security.Claims;
 
 namespace PersonalInvestmentSystem.Web.Controllers
 {
@@ -105,6 +106,84 @@ namespace PersonalInvestmentSystem.Web.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
+            return RedirectToAction("Index", "Home");
+        }
+
+        //Get /Account/ExternalLogin
+        [HttpGet]
+        public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+        {
+            var redirecUrl = Url.Action("ExternalLoginCallBack", "Account", new { returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirecUrl);
+            return new ChallengeResult(provider, properties);
+        }
+
+        //get /Account/ExternalLoginCallBack
+        [HttpGet]
+        public async Task<IActionResult> ExternalLoginCallBack(string? returnUrl = null, string? remotrError = null)
+        {
+            if (remotrError != null)
+            {
+                TempData["Error"] = $"Lỗi đăng nhập bên ngoài: {remotrError}";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                TempData["Error"] = $"Không lấy được thông tin đăng nhập từ Google/Facebook";
+                return RedirectToAction(nameof(Login));
+            }
+
+            //đăng nhập nếu đã liên kết 
+            var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+            if (result.Succeeded)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            //neu chua co tao tk moi
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+            var name = info.Principal.FindFirstValue(ClaimTypes.Name);
+            
+            if (string.IsNullOrEmpty(email))
+            {
+                TempData["Error"] = $"Email không được cung cấp từ nhà cung cấp.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                user = new AppUser
+                {
+                    UserName = email,
+                    Email = email,
+                    FullName = name ?? email.Split('@')[0],
+                    EmailConfirmed = true
+                };
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    TempData["Error"] = "Không thể tạo tài khoản.";
+                    return RedirectToAction(nameof(Login));
+                }
+
+                //tao wallet mac dinh
+                var wallet = new Wallet
+                {
+                    UserId = user.Id,
+                    Balance = 0,
+                    Currency = "VND"
+                };
+
+                await _unitOfWork.Wallets.AddAsync(wallet);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            //lien ket tai khoan
+            await _userManager.AddLoginAsync(user, info);
+            await _signInManager.SignInAsync(user, isPersistent: false);
             return RedirectToAction("Index", "Home");
         }
     }

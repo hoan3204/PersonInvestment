@@ -25,3 +25,59 @@ wwwroot/lib/
 
 # Entity Framework
 Migrations/*.Designer.cs
+# ================================
+# 🔐 Sensitive config (QUAN TRỌNG)
+# ================================
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+.env
+
+# User Secrets (ASP.NET)
+**/secrets.json
+
+# ================================
+# 🔑 Certificates / Keys
+# ================================
+*.pfx
+*.p12
+*.snk
+
+# ================================
+# 📦 NuGet
+# ================================
+*.nupkg
+packages/
+.nuget/
+
+# ================================
+# 🧪 Test results
+# ================================
+TestResults/
+*.trx
+*.coverage
+
+# ================================
+# 🧾 Publish / Output
+# ================================
+publish/
+*.publishproj
+
+# ================================
+# ⚙️ Misc
+# ================================
+*.cache
+*.tmp
+*.temp
+
+# ================================
+# 📁 Node (nếu có frontend)
+# ================================
+node_modules/
+
+# ================================
+# 🛑 Database local files
+# ================================
+*.mdf
+*.ldf
+*.sqlite

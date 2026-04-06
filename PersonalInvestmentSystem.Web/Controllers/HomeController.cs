@@ -20,7 +20,7 @@ public class HomeController : Controller
     {
         var featuredProducts = await _productService.GetFeaturedProductsAsync(3);
         ViewBag.FeaturedProducts = featuredProducts;
-        return View();
+        return View(featuredProducts);
     }
 
     public IActionResult Privacy()

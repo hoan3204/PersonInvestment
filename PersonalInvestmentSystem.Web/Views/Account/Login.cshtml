@@ -41,6 +41,15 @@
                             Đăng nhập
                         </button>
                     </form>
+                    <div class="text-center mt-4">
+                        <p>Hoặc đăng nhập bằng</p>
+                        <a asp-action="ExternalLogin" asp-route-provider="Google" class="btn btn-danger me-2">
+                            <i class="fab fa-google"></i> Google
+                        </a>
+                        <a asp-action="ExternalLogin" asp-route-provider="Facebook" class="btn btn-primary">
+                            <i class="fab fa-facebook-f"></i> Facebook
+                        </a>
+                    </div>
                 </div>
             </div>
 

@@ -1,17 +1,32 @@
-﻿@{
+﻿@model IEnumerable<PersonalInvestmentSystem.Web.Domain.Entities.InvestmentProduct>
+@{
     ViewData["Title"] = "Trang chủ";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <!-- Hero Banner -->
-<section class="bg-primary text-white py-5">
+<section class="bg-dark text-white py-5">
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6">
-                <h1 class="display-4 fw-bold">Quản lý Đầu tư Cá nhân Thông minh</h1>
-                <p class="lead mb-4">Theo dõi cổ phiếu, trái phiếu, quỹ, vàng, crypto. Tính lợi nhuận thực tế và quản lý rủi ro dễ dàng.</p>
-                <a asp-controller="Product" asp-action="Index" class="btn btn-light btn-lg me-3">Khám phá Sản phẩm</a>
-                <a asp-controller="Account" asp-action="Register" class="btn btn-outline-light btn-lg">Đăng ký miễn phí</a>
+                <h1 class="display-4 fw-bold mb-4">Quản lý Đầu tư Cá nhân Thông minh</h1>
+                <p class="lead mb-4">Theo dõi cổ phiếu, trái phiếu, quỹ đầu tư, vàng, tiền điện tử. Tính lợi nhuận thực tế, quản lý rủi ro và nhận thông báo realtime.</p>
+
+                <div class="d-flex gap-3">
+                    <a asp-controller="Product" asp-action="Index" class="btn btn-primary btn-lg px-5">
+                        Khám phá Sản phẩm
+                    </a>
+                    @if (!User.Identity?.IsAuthenticated == true)
+                    {
+                        <a asp-controller="Account" asp-action="Register" class="btn btn-outline-light btn-lg px-5">
+                            Đăng ký miễn phí
+                        </a>
+                    }
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <img src="https://via.placeholder.com/600x400/0d6efd/ffffff?text=Investment+Dashboard"
+                     class="img-fluid rounded shadow" alt="Dashboard" />
             </div>
         </div>
     </div>
@@ -26,56 +41,55 @@
         </div>
 
         <div class="row">
-            @if (ViewBag.FeaturedProducts != null)
+            @foreach (var product in Model)
             {
-                foreach (var product in ViewBag.FeaturedProducts)
-                {
-                    <div class="col-md-3 mb-4">
-                        <div class="card h-100 shadow-sm">
-                            @if (!string.IsNullOrEmpty(product.ImageUrl))
-                            {
-                                <img src="@product.ImageUrl" class="card-img-top" style="height:180px; object-fit:cover;" alt="@product.Name" />
-                            }
-                            <div class="card-body">
-                                <h5 class="card-title">@product.Name</h5>
-                                <p class="text-muted small">@product.Code</p>
-                                <h5 class="text-primary">@product.CurrentPrice.ToString("N0") ₫</h5>
-                                <span class="badge bg-@(product.ChangePercent >= 0 ? "success" : "danger")">
-                                    @(product.ChangePercent >= 0 ? "+" : "")@product.ChangePercent%
-                                </span>
-                                <span class="badge bg-@(product.RiskLevel == PersonalInvestmentSystem.Web.Domain.Enums.RiskLevel.Low ? "success" : product.RiskLevel == PersonalInvestmentSystem.Web.Domain.Enums.RiskLevel.Medium ? "warning" : "danger") ms-2">
-                                    @product.RiskLevel
-                                </span>
-                            </div>
-                            <div class="card-footer bg-white">
-                                <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id" class="btn btn-sm btn-outline-primary w-100">Chi tiết & Mua</a>
-                            </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        @if (!string.IsNullOrEmpty(product.ImageUrl))
+                        {
+                            <img src="@product.ImageUrl" class="card-img-top" style="height:180px; object-fit:cover;" alt="@product.Name" />
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">@product.Name</h5>
+                            <p class="text-muted small">@product.Code</p>
+                            <h5 class="text-primary">@product.CurrentPrice.ToString("N0") ₫</h5>
+                            <span class="badge bg-@(product.ChangePercent >= 0 ? "success" : "danger")">
+                                @(product.ChangePercent >= 0 ? "+" : "")@product.ChangePercent%
+                            </span>
+                            <span class="badge bg-@(product.RiskLevel == PersonalInvestmentSystem.Web.Domain.Enums.RiskLevel.Low ? "success" : product.RiskLevel == PersonalInvestmentSystem.Web.Domain.Enums.RiskLevel.Medium ? "warning" : "danger") ms-2">
+                                @product.RiskLevel
+                            </span>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id"
+                               class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                            <a href="#" onclick="buyProduct(@product.Id)" class="btn btn-sm btn-success">Mua ngay</a>
                         </div>
                     </div>
-                }
+                </div>
             }
         </div>
     </div>
 </section>
 
-<!-- Phần giới thiệu ngắn -->
+<!-- Lợi ích -->
 <section class="py-5">
     <div class="container">
         <div class="row text-center">
-            <div class="col-md-4">
+            <div class="col-md-4 mb-4">
                 <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
                 <h5>Bảo mật cao</h5>
                 <p>ASP.NET Identity + Mã hóa dữ liệu ví tiền</p>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4 mb-4">
                 <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
                 <h5>Phân tích trực quan</h5>
                 <p>Biểu đồ lợi nhuận, rủi ro thời gian thực</p>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4 mb-4">
                 <i class="fas fa-mobile-alt fa-3x text-info mb-3"></i>
                 <h5>Responsive hoàn hảo</h5>
-                <p>Hoạt động tốt trên điện thoại & máy tính</p>
+                <p>Hoạt động tốt trên mọi thiết bị</p>
             </div>
         </div>
     </div>
