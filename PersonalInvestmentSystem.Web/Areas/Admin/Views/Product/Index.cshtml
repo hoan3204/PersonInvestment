@@ -6,7 +6,12 @@
 
 <div class="d-flex justify-content-between mb-4">
     <h3>Quản lý Sản phẩm Đầu tư</h3>
-    <a asp-area="Admin" asp-controller="Product" asp-action="Create" class="btn btn-success" ><i class="fas fa-plus"></i> Thêm mới</a>
+    <div class="d-flex gap-2">
+        <a asp-area="Admin" asp-controller="Product" asp-action="Trash" class="btn btn-outline-danger">
+            <i class="fas fa-trash"></i> Thùng rác
+        </a>
+        <a asp-area="Admin" asp-controller="Product" asp-action="Create" class="btn btn-success"><i class="fas fa-plus"></i> Thêm mới</a>
+    </div>
 </div>
 
 @if (TempData["Success"] != null)

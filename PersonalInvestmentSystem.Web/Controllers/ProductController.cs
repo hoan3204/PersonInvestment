@@ -7,10 +7,12 @@ namespace PersonalInvestmentSystem.Web.Controllers
     {
         private readonly IProductService _productService;
         private readonly IReviewService _reviewService;
+    
         public ProductController(IProductService productService, IReviewService reviewService)
         {
             _productService = productService;
             _reviewService = reviewService;
+    
         }
 
         //danh sach san pham
@@ -56,5 +58,6 @@ namespace PersonalInvestmentSystem.Web.Controllers
             var producs = await _productService.GetFeaturedProductsAsync(8);
             return PartialView("_FeaturedProducts", producs);
         }
+
     }
 }

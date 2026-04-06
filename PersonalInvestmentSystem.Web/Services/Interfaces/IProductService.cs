@@ -15,6 +15,11 @@ namespace PersonalInvestmentSystem.Web.Services.Interfaces
         Task AddProductAsync(InvestmentProduct product);
         Task UpdateProductAsync(InvestmentProduct product);
         Task DeleteProductAsync(int id);
+        Task RestoreProductAsync(int id);
+        Task PermanentlyDeleteProductAsync(int id);
+        Task<PagedResult<InvestmentProduct>> GetPagedDeletedProductsAsync(int page = 1, int pageSize = 10, string search = "");
+        Task<int> AutoDeleteExpiredProductsAsync(int retentionDays);
+
 
         //dung cho admin
         Task<PagedResult<InvestmentProduct>> GetPagedProductsAsync(int page = 1, int pageSize = 10, string search = "");

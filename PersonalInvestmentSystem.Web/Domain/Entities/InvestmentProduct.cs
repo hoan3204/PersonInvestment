@@ -18,6 +18,7 @@ namespace PersonalInvestmentSystem.Web.Domain.Entities
         public string? ImageUrl { get; set; }
         public bool IsFeatured { get; set; } = false;
         public bool IsActive { get; set; } = true;
+        public DateTime? DeleteDate { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
 

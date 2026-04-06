@@ -59,10 +59,31 @@ namespace PersonalInvestmentSystem.Web.Services.Implementations
             if (product != null)
             {
                 product.IsActive = false;
+                product.DeleteDate = DateTime.UtcNow;
                 await _unitOfWork.SaveChangesAsync();
             }
         }
 
+        public async Task RestoreProductAsync(int id)
+        {
+            var product = await _unitOfWork.InvestmentProducts.GetByIdAsync(id);
+            if (product != null)
+            {
+                product.IsActive = true;
+                product.DeleteDate = null;
+                await _unitOfWork.SaveChangesAsync();
+            }
+        }
+
+        public async Task PermanentlyDeleteProductAsync(int id)
+        {
+            var product = await _unitOfWork.InvestmentProducts.GetByIdAsync(id);
+            if (product != null)
+            {
+                _unitOfWork.InvestmentProducts.Remove(product);
+                await _unitOfWork.SaveChangesAsync();
+            }
+        }
         public async Task<PagedResult<InvestmentProduct>> GetPagedProductsAsync(int page = 1, int pageSize = 10, string search = "")
         {
             var all = await _unitOfWork.InvestmentProducts.GetAllAsync();
@@ -84,6 +105,46 @@ namespace PersonalInvestmentSystem.Web.Services.Implementations
                 Page = page,
                 PageSize = pageSize
             };
+        }
+
+        public async Task<PagedResult<InvestmentProduct>> GetPagedDeletedProductsAsync(int page = 1, int pageSize = 10, string search = "")
+        {
+            var all = await _unitOfWork.InvestmentProducts.GetAllAsync();
+            var query = all.Where(p => !p.IsActive);
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(p => p.Name.Contains(search, StringComparison.OrdinalIgnoreCase) || p.Code.Contains(search, StringComparison.OrdinalIgnoreCase));
+
+            }
+
+            query = query.OrderByDescending(p => p.DeleteDate ?? DateTime.MinValue);
+            var totalItems = query.Count();
+            var items = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            return new PagedResult<InvestmentProduct>
+            {
+                Items = items,
+                TotalItems = totalItems,
+                Page = page,
+                PageSize = pageSize
+            };
+
+        }
+
+        public async Task<int> AutoDeleteExpiredProductsAsync(int retentionDays)
+        {
+            if (retentionDays <= 0) retentionDays = 30;
+
+            var all = await _unitOfWork.InvestmentProducts.GetAllAsync();
+            var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
+            var expiredProducts = all.Where(p => !p.IsActive && p.DeleteDate.HasValue && p.DeleteDate <= cutoffDate).ToList();
+
+            if (expiredProducts.Any()) return 0;
+
+            _unitOfWork.InvestmentProducts.RemoveRange(expiredProducts);
+
+            await _unitOfWork.SaveChangesAsync();
+            return expiredProducts.Count;
         }
     }
 }

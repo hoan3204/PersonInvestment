@@ -60,7 +60,7 @@
                 </button>
 
                 <!-- Nút Yêu thích -->
-                <form id="wishlistForm_@Model.Id" asp-controller="Wishlist" asp-action="Add" method="post" style="display:inline;">
+                <form id="wishlistForm_@Model.Id" asp-controller="WatchList" asp-action="Add" method="post" style="display:inline;">
                     <input type="hidden" name="productId" value="@Model.Id" />
                     <button type="button" id="wishlistBtn_@Model.Id"
                             class="btn btn-outline-danger btn-lg px-4 wishlist-btn"

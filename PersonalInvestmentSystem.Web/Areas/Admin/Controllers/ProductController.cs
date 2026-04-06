@@ -10,6 +10,7 @@ using PersonalInvestmentSystem.Web.Domain.Entities;
 using PersonalInvestmentSystem.Web.Domain.Enums;
 using PersonalInvestmentSystem.Web.Services.Interfaces;
 using PersonalInvestmentSystem.Web.UnitOfWork;
+using Microsoft.Extensions.Configuration;
 
 namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
 {
@@ -21,17 +22,20 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICloudinaryService _cloudinaryService;
         private readonly ILogger<ProductController> _logger;
+        private readonly IConfiguration _configuration;
 
         public ProductController(
             IProductService productService,
             IUnitOfWork unitOfWork,
             ICloudinaryService cloudinaryService,
-            ILogger<ProductController> logger)
+            ILogger<ProductController> logger,
+            IConfiguration configuration)
         {
             _productService = productService;
             _unitOfWork = unitOfWork;
             _cloudinaryService = cloudinaryService;
             _logger = logger;
+            _configuration = configuration;
         }
 
         // GET: Admin/Product
@@ -171,6 +175,42 @@ namespace PersonalInvestmentSystem.Web.Areas.Admin.Controllers
                 TempData["Error"] = "Không thể xóa sản phẩm.";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        //get/Admin/Product/Trash
+        public async Task<IActionResult> Trash(int page = 1, string search = "")
+        {
+            var retentionDays = _configuration.GetValue<int>("ProductTrash:AutoDeleteAfterDays", 30);
+
+            var removedCount = await _productService.AutoDeleteExpiredProductsAsync(retentionDays);
+
+            if (retentionDays > 0)
+            {
+                TempData["Error"] = $"Đã tự động xóa vĩnh viễn {removedCount} sản phẩm quá hạn trong thùng rác.";
+
+            }
+            var paged = await _productService.GetPagedDeletedProductsAsync(page, 10, search);
+            ViewBag.Search = search;
+            ViewBag.RetentionDays = retentionDays;
+            return View(paged);
+        }
+        //post Admin/Product/Restore/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Restore(int id)
+        {
+            await _productService.RestoreProductAsync(id);
+            TempData["Success"] = "Khôi phục sản phẩm thành công.";
+            return RedirectToAction(nameof(Index));
+        }
+        //post Admin/Product/DeletePermanent/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeletePermanent(int id)
+        {
+            await _productService.PermanentlyDeleteProductAsync(id);
+            TempData["Success"] = "Đã xóa vĩnh viễn.";
+            return RedirectToAction(nameof(Trash));
         }
 
         private async Task LoadDropdowns()
