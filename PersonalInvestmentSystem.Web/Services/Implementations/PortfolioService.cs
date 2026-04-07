@@ -53,7 +53,20 @@ namespace PersonalInvestmentSystem.Web.Services.Implementations
 
         public async Task<IEnumerable<Portfolio>> GetUserPortfolioItemsAsync(string userId)
         {
-            var portfolios = await _unitOfWork.Portfolios.FindAsync(p => p.UserId == userId && p.Quantity > 0);
+            // Lấy danh sách Portfolio trước
+            var portfolios = await _unitOfWork.Portfolios.FindAsync(
+                p => p.UserId == userId && p.Quantity > 0
+            );
+
+            // Load Product thủ công cho từng Portfolio để tránh null
+            foreach (var portfolio in portfolios)
+            {
+                if (portfolio.Product == null)
+                {
+                    portfolio.Product = await _unitOfWork.InvestmentProducts.GetByIdAsync(portfolio.ProductId);
+                }
+            }
+
             return portfolios;
         }
     }

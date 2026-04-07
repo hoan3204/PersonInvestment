@@ -10,10 +10,12 @@ namespace PersonalInvestmentSystem.Web.Controllers
     {
         private readonly IPortfolioService _portfolioService;
         private readonly IExportService _exportService;
-        public PortfolioController(IPortfolioService portfolioService, IExportService exportService)
+        private readonly IAIService _aiService;
+        public PortfolioController(IPortfolioService portfolioService, IExportService exportService, IAIService aiService)
         {
             _portfolioService = portfolioService;
             _exportService = exportService;
+            _aiService = aiService;
         }
 
         public async Task<IActionResult> Index()
@@ -50,6 +52,20 @@ namespace PersonalInvestmentSystem.Web.Controllers
             var bytes = _exportService.ExportPortfolioToPdf(portfolio, userFullName);
 
             return File(bytes, "application/pdf", $"Portfolio_{userFullName}_{DateTime.Now:yyyyMMdd}.pdf");
+        }
+
+        //goi ai phan tich danh muc
+        [HttpPost]
+        public async Task<IActionResult> Analyze()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return RedirectToAction("Login", "Account");
+
+            string analysis = await _aiService.AnalyzePortfolioAsync(userId);
+
+            TempData["AI_Analysis"] = analysis;
+            return RedirectToAction(nameof(Index));
         }
     }
 }

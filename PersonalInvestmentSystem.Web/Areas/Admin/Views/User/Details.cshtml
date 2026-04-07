@@ -1,0 +1,82 @@
+﻿@model PersonalInvestmentSystem.Web.Domain.Entities.AppUser
+@{
+    ViewBag.Title = "Chi tiết Người dùng";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5><i class="fas fa-user"></i> Chi tiết Người dùng</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Thông tin cơ bản -->
+            <div class="col-md-4 text-center mb-4">
+                @if (!string.IsNullOrEmpty(Model.Avatar))
+                {
+                    <img src="@Model.Avatar" class="rounded-circle mb-3" style="width:150px; height:150px; object-fit:cover;" alt="Avatar" />
+                }
+                else
+                {
+                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3" style="width:150px; height:150px;">
+                        <i class="fas fa-user fa-5x text-white"></i>
+                    </div>
+                }
+                <h4>@Model.FullName</h4>
+                <p class="text-muted">@Model.Email</p>
+            </div>
+
+            <!-- Thông tin chi tiết -->
+            <div class="col-md-8">
+                <table class="table table-bordered">
+                    <tr>
+                        <th style="width:200px">ID</th>
+                        <td>@Model.Id</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>@Model.Email</td>
+                    </tr>
+                    <tr>
+                        <th>Số điện thoại</th>
+                        <td>@Model.PhoneNumber</td>
+                    </tr>
+                    <tr>
+                        <th>Ngày sinh</th>
+                        <td>@Model.DateOfBirth.ToString("dd/MM/yyyy")</td>
+                    </tr>
+                    <tr>
+                        <th>Trạng thái</th>
+                        <td>
+                            <span class="badge @(Model.IsActive ? "bg-success" : "bg-danger")">
+                                @(Model.IsActive ? "Hoạt động" : "Đã khóa")
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Ngày tạo</th>
+                        <td>@Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>
+
+        @if (Model.IsActive)
+        {
+            <a asp-action="LockUser" asp-route-id="@Model.Id" class="btn btn-warning"
+               onclick="return confirm('Khóa tài khoản này?')">
+                <i class="fas fa-lock"></i> Khóa tài khoản
+            </a>
+        }
+        else
+        {
+            <a asp-action="UnlockUser" asp-route-id="@Model.Id" class="btn btn-success"
+               onclick="return confirm('Mở khóa tài khoản này?')">
+                <i class="fas fa-unlock"></i> Mở khóa
+            </a>
+        }
+    </div>
+</div>

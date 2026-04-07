@@ -10,7 +10,8 @@
     </div>
     <div class="card-body">
         <form asp-action="Create" method="post" enctype="multipart/form-data">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="alert alert-danger"></div>
 
             <div class="row">
                 <div class="col-md-6">
@@ -36,7 +37,9 @@
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label">Loại sản phẩm</label>
-                        <select asp-for="Type" class="form-select" asp-items="ViewBag.Types" required></select>
+                        <select asp-for="Type" class="form-select" asp-items="ViewBag.Types" required>
+                            <option value="">-- Chọn loại --</option>
+                        </select>
                     </div>
                 </div>
                 <div class="col-md-3">

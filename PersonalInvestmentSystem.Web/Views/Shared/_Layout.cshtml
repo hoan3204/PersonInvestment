@@ -25,10 +25,8 @@
                     <li class="nav-item"><a class="nav-link" asp-controller="Portfolio" asp-action="Index">Danh mục của tôi</a></li>
                     <li class="nav-item"><a class="nav-link" asp-controller="Wallet" asp-action="Index">Ví của tôi</a></li>
                     <li class="nav-item"><a class="nav-link" asp-controller="Transaction" asp-action="History">Giao dịch</a></li>
-
-                    <!-- Nút Wishlist -->
                     <li class="nav-item">
-                        <a class="nav-link" asp-controller="WatchList" asp-action="Index">
+                        <a class="nav-link" asp-controller="Wishlist" asp-action="Index">
                             <i class="fas fa-heart"></i> Yêu thích
                         </a>
                     </li>
@@ -58,15 +56,19 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" asp-controller="Wallet" asp-action="Index">Ví của tôi</a></li>
                                 <li><a class="dropdown-item" asp-controller="Portfolio" asp-action="Index">Danh mục đầu tư</a></li>
-                                <li><a class="dropdown-item" asp-controller="WatchList" asp-action="Index">Danh sách yêu thích</a></li>
+                                <li><a class="dropdown-item" asp-controller="Wishlist" asp-action="Index">Danh sách yêu thích</a></li>
                                 <li><a class="dropdown-item" asp-controller="Transaction" asp-action="History">Lịch sử giao dịch</a></li>
-                                <li>
-                                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "" )"
-                                       href="@Url.Action("Index", "Dashboard", new { area = "Admin" })">
-                                        <i class="fas fa-home"></i>
-                                        <span class="link-text">Dashboard</span>
-                                    </a>
-                                </li>
+
+                                <!-- Chỉ hiển thị Dashboard khi là Admin -->
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <li>
+                                        <a class="dropdown-item" asp-area="Admin" asp-controller="Dashboard" asp-action="Index">
+                                            <i class="fas fa-chart-pie"></i> Admin Dashboard
+                                        </a>
+                                    </li>
+                                }
+
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form asp-controller="Account" asp-action="Logout" method="post" style="display:inline;">
@@ -103,7 +105,6 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
     <!-- SignalR Client -->
@@ -112,7 +113,7 @@
         @if (User.Identity?.IsAuthenticated == true)
         {
             <text>
-                // ... (giữ nguyên code SignalR và loadNotifications của bạn)
+                    // Giữ nguyên code SignalR và loadNotifications của bạn ở đây
             </text>
         }
     </script>

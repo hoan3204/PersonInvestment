@@ -12,7 +12,31 @@ using Microsoft.AspNetCore.SignalR;
 using PersonalInvestmentSystem.Services.Implementations;
 using PersonalInvestmentSystem.Web.Models;
 
+// Setup logging before anything else
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddConsole();
+    builder.AddDebug();
+    builder.SetMinimumLevel(LogLevel.Information);
+});
+var logger = loggerFactory.CreateLogger("Program");
+
+// Global exception handler for unhandled exceptions
+AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+{
+    var exception = args.ExceptionObject as Exception;
+    logger.LogCritical(exception, "UNHANDLED EXCEPTION - App is crashing!");
+    Console.WriteLine($"[CRITICAL] UNHANDLED EXCEPTION: {exception?.Message}");
+    Console.WriteLine($"[CRITICAL] StackTrace: {exception?.StackTrace}");
+};
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Add logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.SetMinimumLevel(LogLevel.Information);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -66,6 +90,7 @@ builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection(
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IWatchlistService, WatchListService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IAIService, AIService>();
 builder.Services.AddMemoryCache();
 
 //google login
@@ -91,13 +116,53 @@ builder.Services.AddAuthentication()
 builder.Services.Configure<MoMoSettings>(builder.Configuration.GetSection("MoMoSettings"));
 var app = builder.Build();
 
-app.MapHub<NotificationHub>("/notificationHub");
+var appLogger = app.Services.GetRequiredService<ILogger<Program>>();
+appLogger.LogInformation("===== APPLICATION STARTING =====");
+
+// Exception handling middleware
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        appLogger.LogError(ex, "[MIDDLEWARE] Exception caught during request: {Path}", context.Request.Path);
+        Console.WriteLine($"[ERROR] Exception: {ex.Message}");
+        Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+        
+        if (!context.Response.HasStarted)
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "text/plain";
+            await context.Response.WriteAsync($"Error: {ex.Message}\n\n{ex.StackTrace}");
+        }
+    }
+});
+
+// app.MapHub<NotificationHub>("/notificationHub"); // TEMPORARILY DISABLED - Testing for crash
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+}
+else
+{
+    // Disable VS Code browser link in development to avoid conflicts
+    app.Use(async (context, next) =>
+    {
+        // Reject browser link requests
+        if (context.Request.Path.ToString().Contains("browserLink") || 
+            context.Request.Path.ToString().Contains("_vs/"))
+        {
+            context.Response.StatusCode = 404;
+            return;
+        }
+        await next();
+    });
 }
 
 app.UseHttpsRedirection();
@@ -144,9 +209,21 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        var logger = service.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, $"An error occurred while seeding the database {ex.Message}.");
+        var seedLogger = service.GetRequiredService<ILogger<Program>>();
+        seedLogger.LogError(ex, $"An error occurred while seeding the database {ex.Message}.");
     }
 
 }
-app.Run();
+
+try
+{
+    appLogger.LogInformation("===== RUNNING APPLICATION =====");
+    app.Run();
+}
+catch (Exception ex)
+{
+    appLogger.LogCritical(ex, "[FATAL] Application crashed with exception!");
+    Console.WriteLine($"[FATAL] Application crashed: {ex.Message}");
+    Console.WriteLine($"[FATAL] StackTrace: {ex.StackTrace}");
+    Environment.ExitCode = 1;
+}

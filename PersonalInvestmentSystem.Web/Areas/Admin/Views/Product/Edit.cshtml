@@ -10,9 +10,10 @@
     </div>
     <div class="card-body">
         <form asp-action="Edit" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
 
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div asp-validation-summary="All" class="alert alert-danger"></div>
 
             @if (!string.IsNullOrEmpty(Model.ImageUrl))
             {
@@ -69,8 +70,37 @@
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
-                        <label>Giá hiện tại</label>
-                        <input asp-for="CurrentPrice" type="number" class="form-control" />
+                        <label>Mức rủi ro</label>
+                        <select asp-for="RiskLevel" class="form-select" asp-items="ViewBag.RiskLevels" required></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Giá hiện tại (₫)</label>
+                        <div class="input-group">
+                            <input id="CurrentPrice" asp-for="CurrentPrice" type="number" step="0.01" class="form-control" required />
+                            <button class="btn btn-primary" type="button" id="fetchPriceBtn" title="Cập nhật giá từ API">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">
+                            <span id="priceStatus"></span>
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Giá trước đó (₫)</label>
+                        <input id="PreviousPrice" asp-for="PreviousPrice" type="number" step="0.01" class="form-control" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">% Thay đổi</label>
+                        <input id="ChangePercent" asp-for="ChangePercent" type="number" step="0.0001" class="form-control" readonly />
                     </div>
                 </div>
             </div>
@@ -90,3 +120,115 @@
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentPriceInput = document.getElementById('CurrentPrice');
+        const previousPriceInput = document.getElementById('PreviousPrice');
+        const changePriceInput = document.getElementById('ChangePercent');
+        const fetchPriceBtn = document.getElementById('fetchPriceBtn');
+        const priceStatus = document.getElementById('priceStatus');
+        const productCode = '@Model.Code'; // Lấy mã sản phẩm
+        
+        // Function to calculate change percent
+        function calculateChangePercent() {
+            const currentPrice = parseFloat(currentPriceInput.value) || 0;
+            const previousPrice = parseFloat(previousPriceInput.value) || 0;
+
+            if (previousPrice === 0) {
+                changePriceInput.value = '';
+                return;
+            }
+
+            const changePercent = ((currentPrice - previousPrice) / previousPrice) * 100;
+            changePriceInput.value = changePercent.toFixed(4);
+        }
+
+        // Function to fetch price from CoinGecko
+        async function fetchPriceFromAPI() {
+            try {
+                // Disable button while fetching
+                fetchPriceBtn.disabled = true;
+                fetchPriceBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                priceStatus.textContent = 'Đang cập nhật...';
+
+                // Map product code to CoinGecko coin ID
+                const coinIdMap = {
+                    'BTC': 'bitcoin',
+                    'ETH': 'ethereum',
+                    'BNB': 'binancecoin',
+                    'XRP': 'ripple',
+                    'ADA': 'cardano',
+                    'SOL': 'solana',
+                    'DOGE': 'dogecoin',
+                    'USDT': 'tether',
+                    'USDC': 'usd-coin',
+                    'BUSD': 'binance-usd'
+                };
+
+                const coinId = coinIdMap[productCode.toUpperCase()] || productCode.toLowerCase();
+
+                console.log('Fetching price for:', coinId);
+
+                // Fetch from CoinGecko API
+                const response = await fetch(
+                    `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=vnd`,
+                    { 
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                const price = data[coinId]?.vnd;
+
+                if (price && !isNaN(price) && price > 0) {
+                    // Lưu giá cũ để tính % thay đổi
+                    const oldPrice = parseFloat(previousPriceInput.value) || 0;
+                    if (oldPrice === 0) {
+                        previousPriceInput.value = price.toFixed(2);
+                    }
+
+                    currentPriceInput.value = price.toFixed(2);
+                    calculateChangePercent();
+                    priceStatus.textContent = `✓ Cập nhật lúc ${new Date().toLocaleTimeString('vi-VN')}`;
+                    priceStatus.style.color = 'green';
+                } else {
+                    priceStatus.textContent = '⚠ Không tìm thấy giá cho: ' + coinId;
+                    priceStatus.style.color = 'orange';
+                    console.warn('Price not found:', coinId, data);
+                }
+            } catch (error) {
+                console.error('Error fetching price:', error);
+                priceStatus.textContent = '❌ Lỗi: ' + error.message;
+                priceStatus.style.color = 'red';
+            } finally {
+                // Re-enable button
+                fetchPriceBtn.disabled = false;
+                fetchPriceBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            }
+        }
+
+        // Attach event listeners
+        currentPriceInput.addEventListener('change', calculateChangePercent);
+        previousPriceInput.addEventListener('change', calculateChangePercent);
+        fetchPriceBtn.addEventListener('click', fetchPriceFromAPI);
+
+        // Calculate on page load if values exist
+        calculateChangePercent();
+
+        // Auto-fetch price when page loads
+        fetchPriceFromAPI();
+
+        // Auto-refresh every 60 seconds (1 phút)
+        setInterval(fetchPriceFromAPI, 60000);
+    });
+</script>
