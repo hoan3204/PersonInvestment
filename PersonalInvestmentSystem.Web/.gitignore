@@ -81,3 +81,5 @@ node_modules/
 *.mdf
 *.ldf
 *.sqlite
+ ../.dockerignore
+        ../docker-compose.yml
